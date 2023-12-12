@@ -1,0 +1,31 @@
+// SPDX-FileCopyrightText: 2023 Marian Sauer
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+From ab629d38da7c6c8b50cd9983aaf3b6f4ab1174c7 Mon Sep 17 00:00:00 2001
+From: Marian Sauer <ich@localhost>
+Date: Tue, 12 Dec 2023 06:24:39 +0100
+Subject: [PATCH] Do not touch my stack register.
+
+---
+ target/m68k/m68k-semi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/target/m68k/m68k-semi.c b/target/m68k/m68k-semi.c
+index 239f6e44e9..9fd886b7ea 100644
+--- a/target/m68k/m68k-semi.c
++++ b/target/m68k/m68k-semi.c
+@@ -218,8 +218,8 @@ void do_m68k_semihosting(CPUM68KState *env, int nr)
+          * FIXME: This is wrong for boards where RAM does not start at
+          * address zero.
+          */
+-        env->dregs[1] = current_machine->ram_size;
+-        env->aregs[7] = current_machine->ram_size;
++        //env->dregs[1] = current_machine->ram_size;
++        //env->aregs[7] = current_machine->ram_size;
+         return;
+ 
+     default:
+-- 
+2.43.0
+

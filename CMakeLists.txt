@@ -5,6 +5,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 set(PREFIX /opt/m68k-elf)
+set(PREFIX_QEMU /opt/m68k-qemu)
 set(TARGET m68k-elf)
 
 include(ExternalProject)
@@ -34,6 +35,7 @@ ExternalProject_Add(gcc_no_newlib
   "--with-newlib"
   BUILD_COMMAND  "make" "-j"
   INSTALL_COMMAND "make" "install"
+  DEPENDS binutils
 )
 
 include(ExternalProject)
@@ -60,6 +62,7 @@ ExternalProject_Add(newlib
   INSTALL_COMMAND
   ${CMAKE_COMMAND} -E env "PATH=${PREFIX}/bin:$ENV{PATH}"
   "make" "install"
+  DEPENDS gcc_no_newlib
 )
 
 include(ExternalProject)
@@ -81,6 +84,34 @@ ExternalProject_Add(g++_full
   "--with-newlib"
   BUILD_COMMAND  "make" "-j"
   INSTALL_COMMAND "make" "install"
+  DEPENDS newlib
+)
+
+include(ExternalProject)
+ExternalProject_Add(qemu
+  URL  https://download.qemu.org/qemu-8.1.3.tar.xz
+  PATCH_COMMAND "patch" -p 1 < "${CMAKE_CURRENT_LIST_DIR}/0001-Do-not-touch-my-stack-register.patch"
+  CONFIGURE_COMMAND "../qemu/configure"
+  "--prefix=${PREFIX_QEMU}"
+  "--target-list=m68k-softmmu"
+  BUILD_COMMAND  "make" "-j"
+  INSTALL_COMMAND "make" "install"
+)
+
+include(ExternalProject)
+ExternalProject_Add(hello_world
+  SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/hello_world
+  CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_LIST_DIR}/hello_world/m5208evb_semihosted.cmake
+  BUILD_COMMAND  "ninja"
+  INSTALL_COMMAND ""
+  DEPENDS g++_full
 )
 
 project(m5208-cross-toolchain)
+
+ExternalProject_Get_property(hello_world BINARY_DIR)
+add_custom_target(run_hello_world
+  COMMAND ${PREFIX_QEMU}/bin/qemu-system-m68k -M mcf5208evb -semihosting -nographic -kernel ${BINARY_DIR}/main
+  DEPENDS hello_world
+  DEPENDS qemu
+)
