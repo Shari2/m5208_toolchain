@@ -2,13 +2,15 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.22)
 
 set(PREFIX /opt/m68k-elf)
 set(PREFIX_QEMU /opt/m68k-qemu)
 set(TARGET m68k-elf)
 
 include(ExternalProject)
+
+
 ExternalProject_Add(binutils
   URL  https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.xz
   CONFIGURE_COMMAND "../binutils/configure" "--prefix=${PREFIX}" "--target=${TARGET}"
@@ -16,9 +18,9 @@ ExternalProject_Add(binutils
   INSTALL_COMMAND "make" "install"
 )
 
-include(ExternalProject)
 ExternalProject_Add(gcc_no_newlib
   URL  https://ftp.fu-berlin.de/unix/languages/gcc/releases/gcc-13.2.0/gcc-13.2.0.tar.xz
+  PATCH_COMMAND "../gcc_no_newlib/contrib/download_prerequisites"
   CONFIGURE_COMMAND "../gcc_no_newlib/configure"
   "--prefix=${PREFIX}"
   "--target=${TARGET}"
@@ -31,14 +33,13 @@ ExternalProject_Add(gcc_no_newlib
   "--disable-shared"
   "--disable-libquadmath"
   "--disable-libatomic"
-  "--with-cpu=68000"
+  "--with-cpu=5208"
   "--with-newlib"
   BUILD_COMMAND  "make" "-j"
   INSTALL_COMMAND "make" "install"
   DEPENDS binutils
 )
 
-include(ExternalProject)
 ExternalProject_Add(newlib
   URL  ftp://sourceware.org/pub/newlib/newlib-4.3.0.20230120.tar.gz
   CONFIGURE_COMMAND
@@ -65,10 +66,11 @@ ExternalProject_Add(newlib
   DEPENDS gcc_no_newlib
 )
 
-include(ExternalProject)
+ExternalProject_Get_property(gcc_no_newlib SOURCE_DIR)
 ExternalProject_Add(g++_full
-  URL  https://ftp.fu-berlin.de/unix/languages/gcc/releases/gcc-13.2.0/gcc-13.2.0.tar.xz
-  CONFIGURE_COMMAND "../g++_full/configure"
+  DOWNLOAD_COMMAND "" # already got the source with gcc_no_newlib project
+  SOURCE_DIR ${SOURCE_DIR}
+  CONFIGURE_COMMAND "${SOURCE_DIR}/configure"
   "--prefix=${PREFIX}"
   "--target=${TARGET}"
   "--enable-languages=c,c++"
@@ -80,14 +82,13 @@ ExternalProject_Add(g++_full
   "--disable-shared"
   "--disable-libquadmath"
   "--disable-libatomic"
-  "--with-cpu=68000"
+  "--with-cpu=5208"
   "--with-newlib"
   BUILD_COMMAND  "make" "-j"
   INSTALL_COMMAND "make" "install"
   DEPENDS newlib
 )
 
-include(ExternalProject)
 ExternalProject_Add(qemu
   URL  https://download.qemu.org/qemu-8.1.3.tar.xz
   PATCH_COMMAND "patch" -p 1 < "${CMAKE_CURRENT_LIST_DIR}/0001-Do-not-touch-my-stack-register.patch"
@@ -98,7 +99,6 @@ ExternalProject_Add(qemu
   INSTALL_COMMAND "make" "install"
 )
 
-include(ExternalProject)
 ExternalProject_Add(hello_world
   SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/hello_world
   CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_LIST_DIR}/hello_world/m5208evb_semihosted.cmake
