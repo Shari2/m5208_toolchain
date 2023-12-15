@@ -12,7 +12,10 @@ int getentropy(void *buffer, size_t length) {
 
 int main()
 {
-  auto hello = std::format("{} {}!", "Hello", "world", "something");
+  volatile float a = 1.5;
+  volatile float b = 0.5;
+  float version = a + b;
+  auto hello = std::format("{} {} {:.2f}!", "Hello", "world", version);
   printf("%s\n", hello.c_str());
   return 0;
 }
